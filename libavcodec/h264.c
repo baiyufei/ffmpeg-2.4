@@ -49,7 +49,7 @@
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"
-#include "vdpau_compat.h"
+#include "vdpau_internal.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
@@ -293,7 +293,7 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
     if(i>=length-1){ //no escaped 0
         *dst_length= length;
         *consumed= length+1; //+1 for the header
-        if(h->avctx->flags2 & AV_CODEC_FLAG2_FAST){
+        if(h->avctx->flags2 & CODEC_FLAG2_FAST){
             return src;
         }else{
             memcpy(dst, src, length);
@@ -324,7 +324,7 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, H264SliceContext *sl,
         dst[di++] = src[si++];
 
 nsc:
-    memset(dst + di, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    memset(dst + di, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     *dst_length = di;
     *consumed   = si + 1; // +1 for the header
@@ -342,7 +342,7 @@ static int decode_rbsp_trailing(H264Context *h, const uint8_t *src)
     int v = *src;
     int r;
 
-    ff_tlog(h->avctx, "rbsp trailing %X\n", v);
+    tprintf(h->avctx, "rbsp trailing %X\n", v);
 
     for (r = 1; r < 9; r++) {
         if (v & 1)
@@ -1392,7 +1392,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
     if(!h->slice_context_count)
          h->slice_context_count= 1;
     h->max_contexts = h->slice_context_count;
-    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
+    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
         if (!h->first_field)
             h->cur_pic_ptr = NULL;
@@ -1546,8 +1546,8 @@ again:
                 // "recovered".
                 if (h->nal_unit_type == NAL_IDR_SLICE)
                     h->frame_recovered |= FRAME_RECOVERED_IDR;
-                h->frame_recovered |= 3*!!(avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL);
-                h->frame_recovered |= 3*!!(avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT);
+                h->frame_recovered |= 3*!!(avctx->flags2 & CODEC_FLAG2_SHOW_ALL);
+                h->frame_recovered |= 3*!!(avctx->flags & CODEC_FLAG_OUTPUT_CORRUPT);
 #if 1
                 h->cur_pic_ptr->recovered |= h->frame_recovered;
 #else
@@ -1555,7 +1555,7 @@ again:
 #endif
 
                 if (h->current_slice == 1) {
-                    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS))
+                    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS))
                         decode_postinit(h, nal_index >= nals_needed);
 
                     if (h->avctx->hwaccel &&
@@ -1563,7 +1563,7 @@ again:
                         goto end;
 #if FF_API_CAP_VDPAU
                     if (CONFIG_H264_VDPAU_DECODER &&
-                        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+                        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
                         ff_vdpau_h264_picture_start(h);
 #endif
                 }
@@ -1577,7 +1577,7 @@ again:
                             goto end;
 #if FF_API_CAP_VDPAU
                     } else if (CONFIG_H264_VDPAU_DECODER &&
-                               h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
+                               h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
                         ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
                                                 start_code,
                                                 sizeof(start_code));
@@ -1644,8 +1644,9 @@ again:
 
             if (context_count == h->max_contexts) {
                 ret = ff_h264_execute_decode_slices(h, context_count);
-                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+                if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE)) {
                     goto end;
+                }
                 context_count = 0;
             }
 
@@ -1878,7 +1879,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         goto out;
     }
 
-    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
+    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS) && !h->cur_pic_ptr) {
         if (avctx->skip_frame >= AVDISCARD_NONREF ||
             buf_size >= 4 && !memcmp("Q264", buf, 4))
             return buf_size;
@@ -1886,9 +1887,9 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS) ||
+    if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS) ||
         (h->mb_y >= h->mb_height && h->mb_height)) {
-        if (avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)
+        if (avctx->flags2 & CODEC_FLAG2_CHUNKS)
             decode_postinit(h, 1);
 
         if ((ret = ff_h264_field_end(h, &h->slice_ctx[0], 0)) < 0)
@@ -2029,9 +2030,9 @@ AVCodec ff_h264_decoder = {
     .init                  = ff_h264_decode_init,
     .close                 = h264_decode_end,
     .decode                = h264_decode_frame,
-    .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
-                             AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
-                             AV_CODEC_CAP_FRAME_THREADS,
+    .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 |
+                             CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS |
+                             CODEC_CAP_FRAME_THREADS,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),

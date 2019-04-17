@@ -42,7 +42,7 @@
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_compat.h"
+#include "vdpau_internal.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {
@@ -159,7 +159,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 
 #if FF_API_CAP_VDPAU
     if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_set_reference_frames(h);
 #endif
 
@@ -182,7 +182,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 
 #if FF_API_CAP_VDPAU
     if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
         ff_vdpau_h264_picture_complete(h);
 #endif
 

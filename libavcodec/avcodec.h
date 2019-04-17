@@ -1409,6 +1409,7 @@ typedef struct AVCodecContext {
      */
     int width, height;
 
+
     /**
      * Bitstream width / height, may be different from width/height e.g. when
      * the decoded frame is cropped before being output or lowres is enabled.
@@ -2578,6 +2579,7 @@ typedef struct AVCodecContext {
 #endif
 #define FF_DEBUG_BUFFERS     0x00008000
 #define FF_DEBUG_THREADS     0x00010000
+#define FF_DEBUG_GREEN_MD    0x00800000
 #define FF_DEBUG_NOMC        0x01000000
 
 #if FF_API_DEBUG_MV
@@ -2990,6 +2992,14 @@ typedef struct AVCodecContext {
     AVRational pkt_timebase;
 
     /**
+     * - decoding: For codecs that store a framerate value in the compressed
+     *             bitstream, the decoder may export it here. { 0, 1} when
+     *             unknown.
+     * - encoding: unused
+     */
+    AVRational framerate;
+
+    /**
      * AVCodecDescriptor
      * Code outside libavcodec should access this field using:
      * av_codec_{get,set}_codec_descriptor(avctx)
@@ -3079,6 +3089,15 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     uint16_t *chroma_intra_matrix;
+    /*
+     * Properties of the stream that gets decoded
+     * To be accessed through av_codec_get_properties() (NO direct access)
+     * - encoding: unused
+     * - decoding: set by libavcodec
+     */
+    unsigned properties;
+#define FF_CODEC_PROPERTY_LOSSLESS        0x00000001
+#define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
@@ -4294,6 +4313,28 @@ typedef struct AVCodecParserContext {
      * For example, this corresponds to H.264 PicOrderCnt.
      */
     int output_picture_number;
+
+    /**
+     * Dimensions of the decoded video intended for presentation.
+     */
+    int width;
+    int height;
+
+    /**
+     * Dimensions of the coded video.
+     */
+    int coded_width;
+    int coded_height;
+
+    /**
+     * The format of the coded data, corresponds to enum AVPixelFormat for video
+     * and for enum AVSampleFormat for audio.
+     *
+     * Note that a decoder can have considerable freedom in how exactly it
+     * decodes the data, so the format reported here might be different from the
+     * one returned by a decoder.
+     */
+    int format;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {

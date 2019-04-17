@@ -339,7 +339,7 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
              : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, sl->linesize,
                                                        height);
 
-    if (!(h->flags & AV_CODEC_FLAG_GRAY)) {
+    if (!(h->flags & CODEC_FLAG_GRAY)) {
         mx     = mx + (mx < (int) x) >> 1;
         my     = my + (my < (int) y) >> 1;
         width  = width  >> 1;
@@ -906,7 +906,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
     ff_h264dsp_init(&h->h264dsp, 8, 1);
     av_assert0(h->sps.bit_depth_chroma == 0);
-    ff_h264_pred_init(&h->hpc, AV_CODEC_ID_SVQ3, 8, 1);
+    ff_h264_pred_init(&h->hpc, CODEC_ID_SVQ3, 8, 1);
     ff_videodsp_init(&h->vdsp, 8);
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
@@ -1330,7 +1330,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                 mb_type += 4;
             if (mb_type > 33 || svq3_decode_mb(s, mb_type)) {
                 av_log(h->avctx, AV_LOG_ERROR,
-                       "error while decoding MB %d %d\n", sl->mb_x, sl->mb_y);
+                       "error while decoding MB## 1  %d %d\n", sl->mb_x, sl->mb_y);
                 return -1;
             }
 
@@ -1409,14 +1409,14 @@ AVCodec ff_svq3_decoder = {
     .name           = "svq3",
     .long_name      = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_SVQ3,
+    .id             = CODEC_ID_SVQ3,
     .priv_data_size = sizeof(SVQ3Context),
     .init           = svq3_decode_init,
     .close          = svq3_decode_end,
     .decode         = svq3_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND |
-                      AV_CODEC_CAP_DR1             |
-                      AV_CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND |
+                      CODEC_CAP_DR1             |
+                      CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUVJ420P,
                                                      AV_PIX_FMT_NONE},
 };

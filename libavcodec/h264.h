@@ -1058,7 +1058,7 @@ static av_always_inline int pred_intra_mode(const H264Context *h,
     const int top    = sl->intra4x4_pred_mode_cache[index8 - 8];
     const int min    = FFMIN(left, top);
 
-    ff_tlog(h->avctx, "mode:%d %d min:%d\n", left, top, min);
+    tprintf(h->avctx, "mode:%d %d min:%d\n", left, top, min);
 
     if (min < 0)
         return DC_PRED;

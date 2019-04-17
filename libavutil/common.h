@@ -287,6 +287,32 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
     return av_popcount((uint32_t)x) + av_popcount((uint32_t)(x >> 32));
 }
 
+/**
+ * Clip a signed integer into the -(2^p),(2^p-1) range.
+ * @param  a value to clip
+ * @param  p bit position to clip at
+ * @return clipped value
+ */
+static av_always_inline av_const int av_clip_intp2_c(int a, int p)
+{
+    if ((a + (1 << p)) & ~((2 << p) - 1))
+        return (a >> 31) ^ ((1 << p) - 1);
+    else
+        return a;
+}
+
+/**
+ * Clear high bits from an unsigned integer starting with specific bit position
+ * @param  a value to clip
+ * @param  p bit position to clip at
+ * @return clipped value
+ */
+static av_always_inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
+{
+    return a & ((1 << p) - 1);
+}
+
+
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
@@ -466,4 +492,10 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
 #endif
 #ifndef av_popcount64
 #   define av_popcount64    av_popcount64_c
+#endif
+#ifndef av_mod_uintp2
+#   define av_mod_uintp2    av_mod_uintp2_c
+#endif
+#ifndef av_clip_intp2
+#   define av_clip_intp2    av_clip_intp2_c
 #endif

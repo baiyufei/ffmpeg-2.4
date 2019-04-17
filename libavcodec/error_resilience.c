@@ -745,10 +745,10 @@ static int is_intra_more_likely(ERContext *s)
                 } else {
                     ff_thread_await_progress(s->last_pic.tf, mb_y, 0);
                 }
-                is_intra_likely += s->mecc.sad[0](NULL, last_mb_ptr, mb_ptr,
+                is_intra_likely += s->mecc->sad[0](NULL, last_mb_ptr, mb_ptr,
                                                   linesize[0], 16);
                 // FIXME need await_progress() here
-                is_intra_likely -= s->mecc.sad[0](NULL, last_mb_ptr,
+                is_intra_likely -= s->mecc->sad[0](NULL, last_mb_ptr,
                                                   last_mb_ptr + linesize[0] * 16,
                                                   linesize[0], 16);
             } else {
@@ -769,7 +769,8 @@ void ff_er_frame_start(ERContext *s)
         return;
 
     if (!s->mecc_inited) {
-        ff_me_cmp_init(&s->mecc, s->avctx);
+        s->mecc = &s->mecc_o;
+        ff_me_cmp_init(s->mecc, s->avctx);
         s->mecc_inited = 1;
     }
 
@@ -783,7 +784,7 @@ static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
 #if FF_API_CAP_VDPAU
-       s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU          ||
+       s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
 #endif
        !s->cur_pic.f                                                  ||
        s->cur_pic.field_picture
